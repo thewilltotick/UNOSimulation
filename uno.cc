@@ -135,7 +135,7 @@ card draw(player * A, card * dk, int *dkPos, int n){
 //finds and returns playable cards from players hand by looking at prviously played card
 player playablecards(player * A, card *crcd){
     
-    int k =0;
+   // int k =0;
     player playable;//should be large enough
     playable.NumCards = 0;
     //finds  playable cards with either matching number or color
@@ -158,25 +158,25 @@ player playablecards(player * A, card *crcd){
 
 
 
-void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool skpl ){
+void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool * skpl ){
     card b;
-    if(skpl = 1){
+    if((*skpl) == 1){
         if((CurCrd->color == BLACK) && (CurCrd->num == 13)){
-            draw(A, deck, 4);
-            !(*turn);
-            !skpl;
+            draw(A, deck, dkPos, 4);
+            *turn = !(*turn);
+            (*skpl) =0;
             return;
         } else if(CurCrd->num == DRAW){
             draw(A, deck, dkPos, 2);
-            !(*turn);
-            !skpl;
+            *turn =!(*turn);
+            (*skpl) = 0;
             return;
         }
         printf("ERROR in function PLAY or with value of SKPL");
     }else{
         
-        int k =0;
-        player playableCd = playablecards(A, crcd);//should be large enough
+       // int k =0;
+        player playableCrd = playablecards(A, CurCrd);//should be large enough
        
         
         /* playable.NumCards = 0;
@@ -194,12 +194,12 @@ void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool
         }
         */
     //if no card playable in hand then draw 1 if is playable then play, if card is not playable then draw
-        if(playable.NumCards == 0){
+        if(playableCrd.NumCards == 0){
             do{b = draw(A, deck, dkPos, 1);}
             while( (b.num != CurCrd->num) && (b.color != CurCrd->color) && (b.color != BLACK));
             // efficiency increases possible since only 1 card should be playable
-            playable.Hand[playable.NumCards] = b;
-            playable.NumCards++;
+            playableCrd.Hand[playableCrd.NumCards] = b;
+            playableCrd.NumCards++;
         }
          //Select a card to play from the playable cards list
         //Remove card from players hand
@@ -215,8 +215,8 @@ void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool
 
 
 int main(){
-    card Dk[NUM_CARDS];
-    initializeDeck(Dk);
+    card Deck[NUM_CARDS];
+    initializeDeck(Deck);
     card curCrd;
     //confirmed correct return of shuffled deck
     /*
@@ -232,7 +232,7 @@ int main(){
     int DkPos=0;
     
     
-    initializePlayersHand(Dk, &DkPos, &p1, &p2);    
+    initializePlayersHand(Deck, &DkPos, &p1, &p2);    
     //confirm hand initialized  
     //initialization CONFIRMED
     /*
@@ -249,8 +249,8 @@ int main(){
     */
     
     //flip over first card and start game
-     curCrd = dk[DkPos];
-    bool turn = 0
+    curCrd = Deck[DkPos];
+    bool turn = 0;
     while(p1.NumCards != 0 && p2.NumCards != 0){
         if(turn){//player 2 turn 
             turn = 0;
