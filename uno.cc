@@ -20,6 +20,8 @@ using namespace std;
 #define REVERSE 10
 #define SKIP 11
 #define DRAW 12
+#define DRAWF 13
+#define WILD 14
 //black wild is BLACK ,14 Once a color is selected the cards color is changed
 //black draw4 is black,13 Once a color is selected the cards number (num) is changed to that color
 
@@ -38,6 +40,7 @@ struct player{
 
 extern struct card CARDS[NUM_CARDS];
 
+//encode deck of uno cards and then randomly shuffle
 int initializeDeck(card * CARDS){
     card c;
     //card CARDS[NUM_CARDS];
@@ -55,24 +58,20 @@ int initializeDeck(card * CARDS){
     }
     
     //to initialize black cards into the deck uncomment below section and update definition of NUM_CARDS
+    
     //// BEGIN BLACK CARDS CODE
     for(int i = 0; i<4; i++){//wild draw four = BLACK,13
         CARDS[100+i].color = BLACK;
-        CARDS[100+i].num = 13;
+        CARDS[100+i].num = DRAWF;
     }
     for(int i = 0; i<4; i++){//wild cards BLACK , 14
         CARDS[104+i].color = BLACK;
-        CARDS[104+i].num = 14;
+        CARDS[104+i].num = WILD;
     }
     /////END BLACK CARDS CODE
-    
-    
-    //print deck to check correctness
-    for( int i = 0; i<NUM_CARDS; i++){
-        printf("CARDS[%d]: C: %d, N: %d \n", i, CARDS[i].color, CARDS[i].num);
-    }
         
-    //shuffle deck
+    ////////shuffle deck//////
+    
     // Initialize seed randomly 
     srand(time(0)); 
   
@@ -85,11 +84,13 @@ int initializeDeck(card * CARDS){
         CARDS[r] = c;
        // swap(card[i], card[r]); 
     }
+    /*
     printf("-------------------------shuffled------------------------------------------- \n");
     // PRINT SHUFFLED DECK
     for( int i = 0; i<NUM_CARDS; i++){
         printf("CARDS[%d]: C: %d, N: %d \n", i, CARDS[i].color, CARDS[i].num);
     }
+    */
     return 1;
 };
 
@@ -131,7 +132,8 @@ card draw(player * A, card * dk, int *dkPos, int n){
     }
     A->NumCards +=n;
     return dk[(*dkPos -1)];//returns the card last added to the players hand
-};
+}; //THIS FUNCTION HAS BEEN TESTED
+
 //finds and returns playable cards from players hand by looking at prviously played card
 player playablecards(player * A, card *crcd){
     
@@ -153,71 +155,125 @@ player playablecards(player * A, card *crcd){
     
     return playable; 
     
-};
+};//This function has been confirmed to work properly
 
 
 
 
-void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool * skpl ){
+void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool * skpl , card (*choice(player *, player *)) ){
     card b;
+    int Cmodes[5];
+    int CmodesNodes[4];
+    CmodesNodes[0] = 0;CmodesNodes[1]=1;CmodesNodes[2]=2; CmodesNodes[3]=3;
+    Cmodes[0]=0;Cmodes[1]=0; Cmodes[2]=0;Cmodes[3]=0;
+    
     if((*skpl) == 1){
-        if((CurCrd->color == BLACK) && (CurCrd->num == 13)){
+        if(/*(CurCrd->color == BLACK) && */ (CurCrd->num == DRAWF)){
             draw(A, deck, dkPos, 4);
             *turn = !(*turn);
             (*skpl) =0;
             return;
         } else if(CurCrd->num == DRAW){
             draw(A, deck, dkPos, 2);
-            *turn =!(*turn);
+            *turn = !(*turn);
             (*skpl) = 0;
             return;
         }
         printf("ERROR in function PLAY or with value of SKPL");
-    }else{
+    }else{ //take turn and play card
         
-       // int k =0;
-        player playableCrd = playablecards(A, CurCrd);//should be large enough
        
+        player playableCrd = playablecards(A, CurCrd);
         
-        /* playable.NumCards = 0;
-        //finds  playable cards with either matching number or color
-        for(int i = (A->NumCards - 1); i >= 0; i--){
-            if(A->Hand[i].color == CurCrd->color || A->Hand[i].num == CurCrd->num){
-                playable.Hand[k]=A->Hand[i];
-                k++;
-            } else if(A->Hand[i].color == BLACK){
-                //could improve this section to more closely follow game rules but instead will play by house rules 
-                //black can be played whenever; possibly change later
-                playable.Hand[k] = A->Hand[i];
-                k++;
+        for(int k = 0; k< A->NumCards ; k++){ //find color modes 
+            Cmodes[A->Hand[k].color]++;            
+        }
+        for(int i =0; i <3; i++){
+            for(int k=i+1; k<4; k++){
+                if(Cmodes[i] < Cmodes[k]){
+                    swap(CmodesNodes[i], CmodesNodes[k]);//might not be built in
+                    swap(Cmodes[i],Cmodes[k]);
+                }
             }
         }
-        */
-    //if no card playable in hand then draw 1 if is playable then play, if card is not playable then draw
-        if(playableCrd.NumCards == 0){
-            do{b = draw(A, deck, dkPos, 1);}
-            while( (b.num != CurCrd->num) && (b.color != CurCrd->color) && (b.color != BLACK));
+        //if no card playable in hand then draw 1 if is playable then play, if card is not playable then pass turn
+        if(playableCrd.NumCards == 0) {
+            b = draw(A, deck, dkPos, 1);
+            if((b.num != CurCrd->num) && (b.color != CurCrd->color) && (b.color != BLACK)){
+            *turn = !(*turn);
+            return;
+            }
             // efficiency increases possible since only 1 card should be playable
             playableCrd.Hand[playableCrd.NumCards] = b;
             playableCrd.NumCards++;
         }
-         //Select a card to play from the playable cards list
-        //Remove card from players hand
+        if(playableCrd.NumCards == 1){
+            *CurCrd = playableCrd.Hand[0];
+            //find card in player hand and remove
+            if(CurCrd->color == BLACK){
+                CurCrd->color = Cmodes[0];
+                /* should be taken care of below
+                if(CurCrd->num == DRAWF) //if black draw4 card
+                    *skpl = 1;
+                */
+            }
+        }else{ // options to select a card vary
+            //Select a card to play from the playable cards list
+            //set cur card
+           CurCrd = choice(A, &playableCrd); 
+        }
+        //Update CURRENT CARD above
+        
+        //////remove current card from hand and set signals of turn and skpl
+       
+        //find selected card in player hand
+        int playcardIndex =0;
+        while( (playcardIndex < (A->NumCards)) && ((A->Hand[playcardIndex].num != CurCrd->num) && (A->Hand[playcardIndex].color != CurCrd->color)))
+            playcardIndex++;  
+        
         //decrement NUMCARDS in players hand
-        //Update CURRENT CARD
+        (A->NumCards)--;
+        //Remove card from players hand
+        A->Hand[playcardIndex] = A->Hand[(A->NumCards)];
+        A->Hand[A->NumCards].color=99;
+        A->Hand[A->NumCards].num=99;
+       
         //Update TURN, if playing SKIP or REVERSE cards maintain TURN as current value, else !TURN is applied
+        if(CurCrd->num != REVERSE && CurCrd->num != SKIP )
+            *turn = !(*turn);
+        
+        
         //Update SKPL : if playing a draw card set to 1
+        if(CurCrd->num == DRAW || CurCrd->num == DRAWF)
+            *skpl = 1;
+     
+        return;
         //
     }
 };
 
+///////////////////////////////////////////////////CHOICE FUNCTIONS///////////////////////////////////////////
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
 int main(){
-    card Deck[NUM_CARDS];
+    card Deck[NUM_CARDS]; //this contains all cards in the deck
+    card curCrd; //contains data of the last card played
+    player p1;
+    player p2;
+    int DkPos=0; //points to the current position in the deck
+    
     initializeDeck(Deck);
-    card curCrd;
+    
+    
     //confirmed correct return of shuffled deck
     /*
     printf("-------------------------shuffled-2------------------------------------------ \n");
@@ -227,39 +283,49 @@ int main(){
     */
     
     //begin round dealing 7 cards to each player.
-    player p1;//maximum number of cards possible in a players hand
-    player p2;
-    int DkPos=0;
-    
-    
+   
     initializePlayersHand(Deck, &DkPos, &p1, &p2);    
     //confirm hand initialized  
     //initialization CONFIRMED
-    /*
-    printf("----------------DkPos = %d ---------------- \n", DkPos);
-    printf("----------------P1 hand ---------------- \n");
     
+    //printf("----------------DkPos = %d ---------------- \n", DkPos);
+    
+    /* //PRINT EACH PLAYERS CURRENT HAND
+     printf("----------------P1 hand ---------------- \n");
+   
     for(int i = 0; i < p1.NumCards +1; i++){
          printf("CARDS[%d]: C: %d, N: %d \n", i, p1.Hand[i].color, p1.Hand[i].num);
     }
+    
     printf("----------------P2 hand ---------------- \n");
     for(int i = 0; i < p2.NumCards +1; i++){
          printf("CARDS[%d]: C: %d, N: %d \n", i, p2.Hand[i].color, p2.Hand[i].num);
     }
     */
     
+    
     //flip over first card and start game
     curCrd = Deck[DkPos];
-    bool turn = 0;
-    while(p1.NumCards != 0 && p2.NumCards != 0){
+    while(curCrd.color == BLACK){
+        initializeDeck(Deck);
+        initializePlayersHand(Deck, &DkPos, &p1, &p2);  
+        curCrd = Deck[DkPos];
+    }
+    printf("-----------------THE CURRENT CARD IS: C: %d, N: %d", curCrd.color, curCrd.num);
+    DkPos++;
+    bool turn = 0; //turn=0; player 1 turn ::::::turn = 1; player 2 turn
+    bool skipPlay = 0;
+    while(p1.NumCards != 0 && p2.NumCards != 0){ //while neither player has won
         if(turn){//player 2 turn 
-            turn = 0;
+            play( &p2, Deck, &DkPos, &curCrd, &turn, &skipPlay, /*choice function*/ )
             
         }else{//player 1 turn
             turn = 1;
             //execute turn function given input( p1, prevturntype[ie. draw], turn[to implement skip and draw pass turns], dkPos, curCrd)
         }
+        printf("-----------------THE played CARD IS: C: %d, N: %d", curCrd.color, curCrd.num);
     }
+    
     
     
     return 0;
