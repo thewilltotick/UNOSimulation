@@ -71,9 +71,8 @@ int initializeDeck(card * CARDS){
     /////END BLACK CARDS CODE
         
     ////////shuffle deck//////
-    
-    // Initialize seed randomly 
-    srand(time(0)); 
+        // Initialize seed randomly 
+//        srand(time(NULL)); 
   
     for (int i=0; i< NUM_CARDS ;i++) 
     { 
@@ -285,16 +284,33 @@ void play(player * A, card * deck, int * dkPos, card * CurCrd, bool * turn, bool
     }
 };
 
-
+int score(player * Loser){
+    int scr =0;
+    for(int i = 0; i < Loser->NumCards; i++){
+        if(Loser->Hand[i].num <= 9) scr+= Loser->Hand[i].num;
+        if(Loser->Hand[i].num == SKIP || Loser->Hand[i].num == REVERSE|| Loser->Hand[i].num == DRAW) scr +=20;
+        if(Loser->Hand[i].num == WILD || Loser->Hand[i].num == DRAWF) scr+=50;
+    }
+    return scr;
+};
 
 
 int main(){
+    srand(time(NULL)); 
+    int p1s=0;
+    int p2s =0;
     card Deck[NUM_CARDS]; //this contains all cards in the deck
     card curCrd; //contains data of the last card played
     player p1;
     player p2;
-    int DkPos=0; //points to the current position in the deck
+    int DkPos; //points to the current position in the deck
     
+    
+   
+
+    
+    while(p1s <500 && p2s <500){
+    DkPos =0;
     initializeDeck(Deck);
     
     
@@ -302,9 +318,10 @@ int main(){
     /*
     printf("-------------------------shuffled-2------------------------------------------ \n");
     for( int i = 0; i<NUM_CARDS; i++){
-        printf("CARDS[%d]: C: %d, N: %d \n", i, DECK[i].color, DECK[i].num);
+        printf("CARDS[%d]: C: %d, N: %d \n", i, Deck[i].color, Deck[i].num);
     }
-    */
+        */
+
     
     //begin round dealing 7 cards to each player.
    
@@ -383,8 +400,18 @@ int main(){
         } 
 //         printf("-----------------THE played CARD IS: C: %d, N: %d \n", curCrd.color, curCrd.num);
     }
+    if(p1.NumCards == 0 ){
+        
+        p1s += score(&p2);
+        printf("Player 1 Wins: Score: %d \n", p1s);
+        
+    }else{
+        p2s += score(&p1);
+        printf("Player 2 Wins: Score: %d \n", p2s);
+    }
     
     
+    }
     
     
     return 0;
